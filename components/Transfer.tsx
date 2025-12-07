@@ -1,19 +1,36 @@
 import React, { useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { Globe, User, Zap, Clock, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Globe, User, Zap, Clock, ShieldCheck, CheckCircle2, X } from 'lucide-react';
 
 export const Transfer: React.FC = () => {
   const [amount, setAmount] = useState('');
+  const [recipient, setRecipient] = useState('');
+  const [currency, setCurrency] = useState('USD');
   const [step, setStep] = useState(1);
   const [transferType, setTransferType] = useState<'international' | 'domestic'>('international');
   const [speed, setSpeed] = useState<'instant' | 'fast' | 'standard'>('instant');
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSend = () => {
+  const fees = {
+    instant: 2.99,
+    fast: 0.99,
+    standard: 0.00
+  };
+
+  const handleSendClick = () => {
+    if (!amount || !recipient) return;
+    setShowConfirm(true);
+  };
+
+  const confirmTransfer = () => {
+    setShowConfirm(false);
     setStep(2);
     setTimeout(() => {
         setStep(1);
         setAmount('');
+        setRecipient('');
+        setSpeed('instant');
         alert("Transfer Successful! (Simulated)");
     }, 2000);
   };
@@ -30,8 +47,72 @@ export const Transfer: React.FC = () => {
       )
   }
 
+  const currentFee = fees[speed];
+  const numericAmount = parseFloat(amount) || 0;
+  const totalAmount = numericAmount + currentFee;
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn relative">
+      
+      {/* Confirmation Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <Card className="w-full max-w-md bg-[#0a0a0a] border-[#4facfe] shadow-[0_0_50px_rgba(79,172,254,0.15)] relative">
+            <button 
+                onClick={() => setShowConfirm(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+                <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-[#4facfe]/10 rounded-full text-[#4facfe]">
+                    <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold">Confirm Transfer</h3>
+            </div>
+
+            <div className="space-y-4 mb-8">
+                <div className="p-4 rounded-xl bg-[#1e2a5e]/20 border border-white/5 space-y-3">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Recipient</span>
+                        <span className="font-medium text-white text-right break-all ml-4">{recipient}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                         <span className="text-gray-400">Transfer Speed</span>
+                         <div className="flex items-center gap-2">
+                            {speed === 'instant' && <Zap className="w-3 h-3 text-yellow-500" />}
+                            {speed === 'fast' && <Clock className="w-3 h-3 text-blue-500" />}
+                            <span className="font-medium capitalize text-[#4facfe]">{speed}</span>
+                         </div>
+                    </div>
+                </div>
+
+                <div className="space-y-3 px-2">
+                    <div className="flex justify-between text-sm text-gray-400">
+                        <span>Transfer Amount</span>
+                        <span>{numericAmount.toFixed(2)} {currency}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-400">
+                        <span>Transaction Fee</span>
+                        <span>${currentFee.toFixed(2)}</span>
+                    </div>
+                    <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-2"></div>
+                    <div className="flex justify-between items-baseline">
+                        <span className="text-sm font-medium text-gray-300">Total Debit</span>
+                        <span className="text-2xl font-bold text-white">{totalAmount.toFixed(2)} <span className="text-sm font-normal text-gray-400">{currency}</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+                <Button variant="secondary" onClick={() => setShowConfirm(false)}>Cancel</Button>
+                <Button onClick={confirmTransfer}>Confirm Payment</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold mb-2">Send Money</h2>
         <p className="text-gray-400">Transfer funds globally with competitive rates</p>
@@ -68,6 +149,8 @@ export const Transfer: React.FC = () => {
             <label className="block text-sm text-gray-400 mb-2">Recipient</label>
             <input 
               type="text" 
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
               placeholder="Enter email or phone number"
               className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-white focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe]"
             />
@@ -89,10 +172,14 @@ export const Transfer: React.FC = () => {
             </div>
              <div>
               <label className="block text-sm text-gray-400 mb-2">Currency</label>
-              <select className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-white focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe]">
-                  <option>USD - US Dollar</option>
-                  <option>EUR - Euro</option>
-                  <option>GBP - British Pound</option>
+              <select 
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-white focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe]"
+              >
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="GBP">GBP - British Pound</option>
               </select>
             </div>
           </div>
@@ -115,7 +202,7 @@ export const Transfer: React.FC = () => {
               <p className="text-xs text-gray-400">Arrives in &lt; 1 minute</p>
             </div>
           </div>
-          <span className="font-bold text-white">$2.99</span>
+          <span className="font-bold text-white">${fees.instant.toFixed(2)}</span>
         </div>
 
         <div 
@@ -131,11 +218,11 @@ export const Transfer: React.FC = () => {
               <p className="text-xs text-gray-400">Arrives in 2-4 hours</p>
             </div>
           </div>
-          <span className="font-bold text-white">$0.99</span>
+          <span className="font-bold text-white">${fees.fast.toFixed(2)}</span>
         </div>
       </div>
 
-      <Button fullWidth onClick={handleSend} disabled={!amount}>
+      <Button fullWidth onClick={handleSendClick} disabled={!amount || !recipient}>
         Continue Transfer
       </Button>
 

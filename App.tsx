@@ -4,9 +4,11 @@ import { Dashboard } from './components/Dashboard';
 import { Markets } from './components/Markets';
 import { Exchange } from './components/Exchange';
 import { Transfer } from './components/Transfer';
+import { SignIn } from './components/SignIn';
 import { NavView } from './types';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentView, setCurrentView] = useState<NavView>('home');
 
   const renderView = () => {
@@ -24,8 +26,16 @@ function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return <SignIn onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView}>
+    <Layout 
+      currentView={currentView} 
+      onNavigate={setCurrentView}
+      onLogout={() => setIsAuthenticated(false)}
+    >
       {renderView()}
     </Layout>
   );

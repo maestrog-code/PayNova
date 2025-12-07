@@ -1,14 +1,15 @@
 import React from 'react';
 import { NavView } from '../types';
-import { LayoutDashboard, Repeat, Send, BarChart2, Bell, Settings, User } from 'lucide-react';
+import { LayoutDashboard, Repeat, Send, BarChart2, Bell, Settings, User, LogOut } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
   currentView: NavView;
   onNavigate: (view: NavView) => void;
+  onLogout: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate, onLogout }) => {
   const navItems: { id: NavView; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: 'Home', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'exchange', label: 'Exchange', icon: <Repeat className="w-5 h-5" /> },
@@ -29,8 +30,34 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => onNavigate('home')}>
-              <div className="w-10 h-10 paynova-orb flex items-center justify-center font-bold text-[#4facfe] text-xl transition-transform duration-300 group-hover:scale-110">
-                P
+              <div className="w-12 h-12 relative flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-105 group-hover:rotate-180">
+                <svg viewBox="0 0 100 100" className="w-full h-full rounded-full bg-black shadow-[0_0_20px_rgba(79,172,254,0.4)] border border-[#4facfe]/30">
+                    <defs>
+                        <filter id="vortex-glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                        <linearGradient id="neon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#00f2fe" />
+                            <stop offset="100%" stopColor="#4facfe" />
+                        </linearGradient>
+                    </defs>
+                    <g className="animate-[spin_4s_linear_infinite] origin-center">
+                         {/* Outer blurred blades */}
+                         <circle cx="50" cy="50" r="35" stroke="url(#neon-grad)" strokeWidth="12" fill="none" strokeDasharray="60 90" strokeLinecap="round" filter="url(#vortex-glow)" opacity="0.9" />
+                         {/* Inner sharper detail */}
+                         <circle cx="50" cy="50" r="35" stroke="url(#neon-grad)" strokeWidth="2" fill="none" strokeDasharray="60 90" strokeLinecap="round" opacity="0.5" />
+                    </g>
+                    {/* Counter-rotating inner element for complexity */}
+                     <g className="animate-[spin_7s_linear_infinite_reverse] origin-center">
+                         <circle cx="50" cy="50" r="22" stroke="url(#neon-grad)" strokeWidth="6" fill="none" strokeDasharray="30 40" strokeLinecap="round" filter="url(#vortex-glow)" opacity="0.6" />
+                    </g>
+                    {/* The Void */}
+                    <circle cx="50" cy="50" r="16" fill="black" />
+                </svg>
               </div>
               <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-[#4facfe]">PayNova</span>
             </div>
@@ -66,7 +93,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center overflow-hidden border-2 border-white/20">
                   <User className="w-5 h-5 text-white" />
                 </div>
-                <span className="hidden sm:block font-medium text-sm">John Doe</span>
+                 <div className="hidden sm:block">
+                    <span className="block font-medium text-sm">John Doe</span>
+                </div>
+                <button onClick={onLogout} className="p-2 ml-1 text-gray-400 hover:text-red-400 transition-colors" title="Log Out">
+                    <LogOut className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>

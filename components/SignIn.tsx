@@ -5,9 +5,10 @@ import { User, Lock, ShieldCheck, ArrowRight, Loader2, KeyRound, Mail, CheckCirc
 
 interface SignInProps {
   onLogin: () => void;
+  onNavigateToSignUp: () => void;
 }
 
-export const SignIn: React.FC<SignInProps> = ({ onLogin }) => {
+export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) => {
   const [step, setStep] = useState<'credentials' | '2fa' | 'forgotPassword' | 'resetSent'>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -218,7 +219,10 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin }) => {
         </Card>
 
         <p className="text-center text-gray-500 text-sm">
-            Don't have an account? <a href="#" className="text-[#4facfe] hover:text-white transition-colors">Create Account</a>
+          Don't have an account?{' '}
+          <button onClick={onNavigateToSignUp} className="font-medium text-[#4facfe] hover:text-white transition-colors">
+            Create Account
+          </button>
         </p>
       </div>
     </div>

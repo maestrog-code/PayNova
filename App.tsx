@@ -5,10 +5,12 @@ import { Markets } from './components/Markets';
 import { Exchange } from './components/Exchange';
 import { Transfer } from './components/Transfer';
 import { SignIn } from './components/SignIn';
+import { SignUp } from './components/SignUp';
 import { NavView } from './types';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authView, setAuthView] = useState<'signIn' | 'signUp'>('signIn');
   const [currentView, setCurrentView] = useState<NavView>('home');
 
   const renderView = () => {
@@ -27,7 +29,10 @@ function App() {
   };
 
   if (!isAuthenticated) {
-    return <SignIn onLogin={() => setIsAuthenticated(true)} />;
+    if (authView === 'signIn') {
+      return <SignIn onLogin={() => setIsAuthenticated(true)} onNavigateToSignUp={() => setAuthView('signUp')} />;
+    }
+    return <SignUp onSignUp={() => setIsAuthenticated(true)} onNavigateToSignIn={() => setAuthView('signIn')} />;
   }
 
   return (

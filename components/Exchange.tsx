@@ -31,7 +31,10 @@ export const Exchange: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const FEE_PERCENTAGE = 0.01; // 1% fee
+  // Conditional Fee Logic
+  const feePercentage = (fromCurrency === 'TZS' && (toCurrency === 'INR' || toCurrency === 'EUR')) 
+    ? 0.01 // 1%
+    : 0.005; // 0.5% default
 
   const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'INR', 'TZS', 'CNY', 'CHF', 'SGD'];
 
@@ -62,7 +65,7 @@ export const Exchange: React.FC = () => {
 
   const currentRate = rates[toCurrency] || 0;
   const rawConversion = fromAmount * currentRate;
-  const conversionFee = rawConversion * FEE_PERCENTAGE;
+  const conversionFee = rawConversion * feePercentage;
   const finalAmount = rawConversion - conversionFee;
 
   const handleSwap = () => {
@@ -157,8 +160,8 @@ export const Exchange: React.FC = () => {
             {/* From */}
             <div className="space-y-2">
                 <label className="text-sm text-gray-400">From</label>
-                <div className="flex gap-4">
-                    <div className="flex-1 relative">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="w-full sm:flex-1 relative">
                         <select 
                           value={fromCurrency}
                           onChange={(e) => setFromCurrency(e.target.value)}
@@ -180,7 +183,7 @@ export const Exchange: React.FC = () => {
                         type="number" 
                         value={fromAmount}
                         onChange={(e) => setFromAmount(Number(e.target.value))}
-                        className="flex-[2] bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-right text-xl font-bold focus:border-[#4facfe] focus:outline-none"
+                        className="w-full sm:flex-[2] bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-right text-xl font-bold focus:border-[#4facfe] focus:outline-none"
                     />
                 </div>
             </div>
@@ -198,8 +201,8 @@ export const Exchange: React.FC = () => {
             {/* To */}
              <div className="space-y-2">
                 <label className="text-sm text-gray-400">To (Estimated)</label>
-                <div className="flex gap-4">
-                    <div className="flex-1 relative">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="w-full sm:flex-1 relative">
                         <select 
                           value={toCurrency}
                           onChange={(e) => setToCurrency(e.target.value)}
@@ -217,7 +220,7 @@ export const Exchange: React.FC = () => {
                             <span className="text-xs text-gray-500">▼</span>
                         </div>
                     </div>
-                    <div className="flex-[2] bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-right text-xl font-bold flex items-center justify-end text-[#4facfe]">
+                    <div className="w-full sm:flex-[2] bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 text-right text-xl font-bold flex items-center justify-end text-[#4facfe]">
                        {isLoading ? '...' : finalAmount.toFixed(2)}
                     </div>
                 </div>
@@ -236,7 +239,7 @@ export const Exchange: React.FC = () => {
             
             <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-400 flex items-center gap-1">
-                    Conversion Fee ({(FEE_PERCENTAGE * 100).toFixed(1)}%)
+                    Conversion Fee ({(feePercentage * 100).toFixed(1)}%)
                     <span title="Fee applied to the converted amount" className="cursor-help">
                         <Info className="w-3 h-3 text-gray-500" />
                     </span>

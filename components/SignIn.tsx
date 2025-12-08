@@ -187,31 +187,40 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
       <div className="w-full max-w-md relative z-10 space-y-8">
         <div className="flex flex-col items-center gap-4">
             <div className="w-20 h-20 relative flex items-center justify-center shrink-0">
-                <svg viewBox="0 0 100 100" className="w-full h-full rounded-full bg-black shadow-[0_0_30px_rgba(79,172,254,0.6)] border border-[#4facfe]/30">
-                    <defs>
-                        <filter id="vortex-glow-login" x="-50%" y="-50%" width="200%" height="200%">
-                            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                            <feMerge>
-                                <feMergeNode in="coloredBlur" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                        <linearGradient id="neon-grad-login" x1="0%" y1="0%" x2="100%" y2="100%">
+                <svg viewBox="0 0 100 100" className="w-full h-full rounded-full bg-black/50 shadow-[0_0_30px_rgba(79,172,254,0.6)] border border-[#4facfe]/30">
+                     <defs>
+                        <linearGradient id="vortexGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor="#00f2fe" />
                             <stop offset="100%" stopColor="#4facfe" />
                         </linearGradient>
+                         <filter id="vortexBlurLogin" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" />
+                        </filter>
                     </defs>
-                    <g className="animate-[spin_4s_linear_infinite] origin-center">
-                         <circle cx="50" cy="50" r="35" stroke="url(#neon-grad-login)" strokeWidth="12" fill="none" strokeDasharray="60 90" strokeLinecap="round" filter="url(#vortex-glow-login)" opacity="0.9" />
-                         <circle cx="50" cy="50" r="35" stroke="url(#neon-grad-login)" strokeWidth="2" fill="none" strokeDasharray="60 90" strokeLinecap="round" opacity="0.5" />
+                    <g className="animate-[spin_8s_linear_infinite]" style={{ transformOrigin: '50% 50%' }}>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <path
+                          key={i}
+                          d="M 50,50 L 90,50 A 40,40 0 0 0 50,10 Z"
+                          fill="url(#vortexGradLogin)"
+                          transform={`rotate(${i * 45}, 50, 50)`}
+                          opacity="0.6"
+                          filter="url(#vortexBlurLogin)"
+                        />
+                      ))}
                     </g>
-                     <g className="animate-[spin_7s_linear_infinite_reverse] origin-center">
-                         <circle cx="50" cy="50" r="22" stroke="url(#neon-grad-login)" strokeWidth="6" fill="none" strokeDasharray="30 40" strokeLinecap="round" filter="url(#vortex-glow-login)" opacity="0.6" />
-                    </g>
-                    <circle cx="50" cy="50" r="16" fill="black" />
+                    <circle cx="50" cy="50" r="18" fill="black" />
                 </svg>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-[#4facfe]">PayNova</h1>
+            <div className="text-4xl font-bold tracking-wider">
+                <span style={{ color: '#9cff57', textShadow: '0 0 10px rgba(156, 255, 87, 0.4)'}}>PAY</span>
+                <span style={{
+                background: 'linear-gradient(to right, #4facfe, #a7e6ff)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent'
+                }}>NOVA</span>
+            </div>
         </div>
 
         <Card className="border-[#4facfe]/30 shadow-[0_0_40px_rgba(30,42,94,0.6)] backdrop-blur-xl">

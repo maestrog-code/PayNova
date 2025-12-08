@@ -30,36 +30,41 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => onNavigate('home')}>
-              <div className="w-12 h-12 relative flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-105 group-hover:rotate-180">
-                <svg viewBox="0 0 100 100" className="w-full h-full rounded-full bg-black shadow-[0_0_20px_rgba(79,172,254,0.4)] border border-[#4facfe]/30">
+              <div className="w-10 h-10 relative flex items-center justify-center shrink-0">
+                 <svg viewBox="0 0 100 100" className="w-full h-full opacity-90 group-hover:opacity-100 transition-opacity">
                     <defs>
-                        <filter id="vortex-glow" x="-50%" y="-50%" width="200%" height="200%">
-                            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                            <feMerge>
-                                <feMergeNode in="coloredBlur" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                        <linearGradient id="neon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <linearGradient id="vortexGradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor="#00f2fe" />
                             <stop offset="100%" stopColor="#4facfe" />
                         </linearGradient>
+                         <filter id="vortexBlurHeader" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" />
+                        </filter>
                     </defs>
-                    <g className="animate-[spin_4s_linear_infinite] origin-center">
-                         {/* Outer blurred blades */}
-                         <circle cx="50" cy="50" r="35" stroke="url(#neon-grad)" strokeWidth="12" fill="none" strokeDasharray="60 90" strokeLinecap="round" filter="url(#vortex-glow)" opacity="0.9" />
-                         {/* Inner sharper detail */}
-                         <circle cx="50" cy="50" r="35" stroke="url(#neon-grad)" strokeWidth="2" fill="none" strokeDasharray="60 90" strokeLinecap="round" opacity="0.5" />
+                    <g className="animate-[spin_8s_linear_infinite]" style={{ transformOrigin: '50% 50%' }}>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <path
+                          key={i}
+                          d="M 50,50 L 90,50 A 40,40 0 0 0 50,10 Z"
+                          fill="url(#vortexGradHeader)"
+                          transform={`rotate(${i * 45}, 50, 50)`}
+                          opacity="0.6"
+                          filter="url(#vortexBlurHeader)"
+                        />
+                      ))}
                     </g>
-                    {/* Counter-rotating inner element for complexity */}
-                     <g className="animate-[spin_7s_linear_infinite_reverse] origin-center">
-                         <circle cx="50" cy="50" r="22" stroke="url(#neon-grad)" strokeWidth="6" fill="none" strokeDasharray="30 40" strokeLinecap="round" filter="url(#vortex-glow)" opacity="0.6" />
-                    </g>
-                    {/* The Void */}
-                    <circle cx="50" cy="50" r="16" fill="black" />
-                </svg>
+                    <circle cx="50" cy="50" r="18" fill="black" />
+                 </svg>
               </div>
-              <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-[#4facfe]">PayNova</span>
+              <div className="text-2xl font-bold tracking-wider">
+                <span style={{ color: '#9cff57', textShadow: '0 0 5px rgba(156, 255, 87, 0.4)'}}>PAY</span>
+                <span style={{
+                  background: 'linear-gradient(to right, #4facfe, #a7e6ff)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent'
+                }}>NOVA</span>
+              </div>
             </div>
 
             {/* Desktop Nav */}

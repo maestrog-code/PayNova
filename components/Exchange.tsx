@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { ArrowDownUp, RefreshCcw, TrendingUp, AlertCircle, Info } from 'lucide-react';
+import { ArrowDownUp, RefreshCcw, TrendingUp, AlertCircle, Info, CheckCircle2, FileText } from 'lucide-react';
 
 interface Rates {
   [key: string]: number;
 }
 
+interface ReceiptDetails {
+  fromAmount: number;
+  fromCurrency: string;
+  toAmount: number;
+  toCurrency: string;
+  rate: number;
+  fee: number;
+  totalDebited: number;
+  timestamp: string;
+  transactionId: string;
+}
+
 export const Exchange: React.FC = () => {
+  const [view, setView] = useState<'form' | 'receipt'>('form');
+  const [receipt, setReceipt] = useState<ReceiptDetails | null>(null);
+
   const [fromAmount, setFromAmount] = useState<number>(1000);
   const [fromCurrency, setFromCurrency] = useState<string>('USD');
   const [toCurrency, setToCurrency] = useState<string>('EUR');
@@ -16,10 +31,8 @@ export const Exchange: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fee configuration
-  const FEE_PERCENTAGE = 0.05; // 5% fee
+  const FEE_PERCENTAGE = 0.01; // 1% fee
 
-  // Fallback rates keys for dropdowns
   const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'INR', 'TZS', 'CNY', 'CHF', 'SGD'];
 
   const fetchRates = async () => {
@@ -40,12 +53,13 @@ export const Exchange: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchRates();
-    const interval = setInterval(fetchRates, 60000);
-    return () => clearInterval(interval);
-  }, [fromCurrency]); // Refetch when base currency changes
+    if (view === 'form') {
+        fetchRates();
+        const interval = setInterval(fetchRates, 60000);
+        return () => clearInterval(interval);
+    }
+  }, [fromCurrency, view]);
 
-  // Calculations
   const currentRate = rates[toCurrency] || 0;
   const rawConversion = fromAmount * currentRate;
   const conversionFee = rawConversion * FEE_PERCENTAGE;
@@ -55,10 +69,22 @@ export const Exchange: React.FC = () => {
     const temp = fromCurrency;
     setFromCurrency(toCurrency);
     setToCurrency(temp);
+  };
 
-    const btn = document.getElementById('swap-btn');
-    btn?.classList.add('rotate-180');
-    setTimeout(() => btn?.classList.remove('rotate-180'), 300);
+  const handleExchange = () => {
+    const newReceipt: ReceiptDetails = {
+      fromAmount,
+      fromCurrency,
+      toAmount: finalAmount,
+      toCurrency,
+      rate: currentRate,
+      fee: conversionFee,
+      totalDebited: fromAmount,
+      timestamp: new Date().toLocaleString(),
+      transactionId: `EX-${Date.now()}`
+    };
+    setReceipt(newReceipt);
+    setView('receipt');
   };
 
   const getFlagUrl = (currency: string) => {
@@ -69,13 +95,46 @@ export const Exchange: React.FC = () => {
     return `https://flagcdn.com/w40/${map[currency] || 'us'}.png`;
   };
 
-  // Dynamically calculate popular pairs
   const popularPairs = [
     { pair: `${fromCurrency}/EUR`, rate: rates['EUR'], change: '+0.12%' },
     { pair: `${fromCurrency}/GBP`, rate: rates['GBP'], change: '-0.08%' },
     { pair: `${fromCurrency}/JPY`, rate: rates['JPY'], change: '+0.25%' },
     { pair: `${fromCurrency}/CAD`, rate: rates['CAD'], change: '+0.05%' },
   ].filter(p => !p.pair.startsWith(`${fromCurrency}/${fromCurrency}`));
+
+  if (view === 'receipt' && receipt) {
+    return (
+        <div className="max-w-md mx-auto space-y-6 animate-fadeIn">
+             <div className="text-center">
+                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 text-green-400">
+                    <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold">Exchange Successful</h2>
+                <p className="text-gray-400">Your receipt for transaction {receipt.transactionId}</p>
+            </div>
+            <Card>
+                <div className="space-y-4">
+                    <div className="text-center pb-4 border-b border-white/10">
+                        <p className="text-gray-400">You Converted</p>
+                        <p className="text-3xl font-bold">{receipt.fromAmount.toLocaleString()} {receipt.fromCurrency}</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-gray-400">You Received</p>
+                        <p className="text-3xl font-bold text-[#4facfe]">{receipt.toAmount.toFixed(2)} {receipt.toCurrency}</p>
+                    </div>
+                    <div className="pt-4 space-y-2 border-t border-white/10 text-sm">
+                        <div className="flex justify-between"><span className="text-gray-400">Rate:</span><span>1 {receipt.fromCurrency} = {receipt.rate.toFixed(4)} {receipt.toCurrency}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Fee:</span><span>{receipt.fee.toFixed(2)} {receipt.toCurrency}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Timestamp:</span><span>{receipt.timestamp}</span></div>
+                    </div>
+                </div>
+            </Card>
+            <Button fullWidth onClick={() => setView('form')}>
+                Make Another Exchange
+            </Button>
+        </div>
+    )
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn">
@@ -129,7 +188,6 @@ export const Exchange: React.FC = () => {
             {/* Swap Button */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                 <button 
-                  id="swap-btn"
                   onClick={handleSwap}
                   className="w-12 h-12 rounded-full bg-[#1e2a5e] border border-[#4facfe] flex items-center justify-center text-[#4facfe] hover:scale-110 transition-all duration-300 shadow-[0_0_15px_rgba(79,172,254,0.4)]"
                 >
@@ -201,7 +259,9 @@ export const Exchange: React.FC = () => {
         </div>
 
         <div className="mt-6">
-            <Button fullWidth>Exchange Currency</Button>
+            <Button fullWidth onClick={handleExchange} disabled={isLoading || fromAmount <= 0}>
+                Exchange Currency
+            </Button>
         </div>
       </Card>
 

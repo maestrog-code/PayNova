@@ -82,7 +82,7 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn relative">
       {showSettlement && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
-          <Card className="w-full max-w-xl relative max-h-[90vh] overflow-y-auto scrollbar-hide p-8">
+          <Card className="w-full max-w-4xl relative max-h-[90vh] overflow-y-auto scrollbar-hide p-8">
             {!isUploading && <button onClick={() => setShowSettlement(false)} className="absolute top-4 right-4 text-gray-400 hover:text-current transition-colors"><X className="w-5 h-5" /></button>}
             
             <div className="space-y-6">
@@ -91,7 +91,7 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     <h3 className="text-xl font-bold">Manual Settlement Required</h3>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <div className="p-4 rounded-xl border dark:bg-white/5 dark:border-white/10 bg-slate-100 border-slate-200 space-y-2">
                         <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">MPESA (VODACOM)</p>
                         <p className="text-sm font-bold truncate">Cuthbert Gonzalva Rwebilumi</p>
@@ -108,9 +108,17 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                             <button onClick={() => copyToClipboard('22510121264')} className="p-1 hover:bg-blue-500/10 rounded"><Copy className="w-3 h-3" /></button>
                         </div>
                     </div>
+                     <div className="p-4 rounded-xl border dark:bg-white/5 dark:border-white/10 bg-slate-100 border-slate-200 space-y-2">
+                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">CRDB BANK</p>
+                        <p className="text-sm font-bold truncate">Godson Martin Rubenga</p>
+                        <div className="flex items-center justify-between">
+                            <span className="font-mono text-sm font-bold">0152873704000</span>
+                            <button onClick={() => copyToClipboard('0152873704000')} className="p-1 hover:bg-blue-500/10 rounded"><Copy className="w-3 h-3" /></button>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 max-w-2xl mx-auto w-full">
                     <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 flex justify-between items-center">
                         <span className="text-sm text-gray-500">Amount Due</span>
                         <span className="text-xl font-bold text-blue-500">{totalAmount.toFixed(2)} {currency}</span>
@@ -138,7 +146,7 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     </div>
                 </div>
 
-                <Button fullWidth onClick={confirmTransfer} disabled={isUploading || !selectedFile}>
+                <Button fullWidth onClick={confirmTransfer} disabled={isUploading || !selectedFile} className="max-w-2xl mx-auto">
                     {isUploading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Confirm Deposit & Finish'}
                 </Button>
             </div>

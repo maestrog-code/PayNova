@@ -181,7 +181,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
 
   if (view === 'settlement') {
     return (
-        <div className="max-w-2xl mx-auto space-y-8 animate-fadeIn pb-20">
+        <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-20">
             <div className="flex items-center gap-4">
                 <button onClick={() => setView('form')} className="p-2 hover:bg-black/5 rounded-full transition-all">
                     <X className="w-6 h-6" />
@@ -192,7 +192,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Bank 1: MPesa */}
                 <Card className="p-6 border-blue-500/20">
                     <div className="flex items-center justify-between mb-4">
@@ -202,7 +202,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     <div className="space-y-4">
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Account Name</p>
-                            <p className="text-sm font-bold">Cuthbert Gonzalva Rwebilumi</p>
+                            <p className="text-sm font-bold truncate">Cuthbert Gonzalva Rwebilumi</p>
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Account Number</p>
@@ -223,7 +223,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     <div className="space-y-4">
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Account Name</p>
-                            <p className="text-sm font-bold">Craig Furahini Mbwilo</p>
+                            <p className="text-sm font-bold truncate">Craig Furahini Mbwilo</p>
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Account Number</p>
@@ -234,9 +234,30 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                         </div>
                     </div>
                 </Card>
+
+                {/* Bank 3: CRDB */}
+                <Card className="p-6 border-blue-500/20">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="bg-slate-700 text-white text-[10px] font-bold px-2 py-0.5 rounded">CRDB BANK</div>
+                        <ShieldCheck className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Account Name</p>
+                            <p className="text-sm font-bold truncate">Godson Martin Rubenga</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Account Number</p>
+                            <div className="flex items-center justify-between mt-1">
+                                <p className="text-lg font-mono font-bold">0152873704000</p>
+                                <button onClick={() => copyToClipboard('0152873704000')} className="p-1.5 hover:bg-black/5 rounded"><Copy className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
             </div>
 
-            <Card className="p-8">
+            <Card className="p-8 max-w-2xl mx-auto">
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <Upload className="w-6 h-6 text-blue-500" />

@@ -25,7 +25,7 @@ export const Assistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
   const suggestedPrompts = [
@@ -35,10 +35,12 @@ export const Assistant: React.FC = () => {
     "Supported currencies"
   ];
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages, isTyping]);
 
   // Initialize Speech Recognition
@@ -127,30 +129,30 @@ export const Assistant: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-180px)] flex flex-col gap-6 animate-fadeIn">
-      <div className="flex items-center justify-between px-2">
+    <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] flex flex-col gap-4 md:gap-6 animate-fadeIn">
+      <div className="flex items-center justify-between px-2 shrink-0">
         <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 bg-gradient-to-tr from-[#4facfe] to-[#9cff57] rounded-full flex items-center justify-center transition-all duration-500 ${isTyping ? 'shadow-[0_0_20px_rgba(79,172,254,0.6)] scale-110' : 'shadow-[0_0_15px_rgba(79,172,254,0.4)]'}`}>
-                <Bot className={`w-6 h-6 text-black ${isTyping ? 'animate-pulse' : ''}`} />
+            <div className={`w-10 h-10 md:w-12 md:h-12 bg-gradient-to-tr from-[#4facfe] to-[#9cff57] rounded-full flex items-center justify-center transition-all duration-500 ${isTyping ? 'shadow-[0_0_20px_rgba(79,172,254,0.6)] scale-110' : 'shadow-[0_0_15px_rgba(79,172,254,0.4)]'}`}>
+                <Bot className={`w-5 h-5 md:w-6 md:h-6 text-black ${isTyping ? 'animate-pulse' : ''}`} />
             </div>
             <div>
-                <h2 className="text-xl font-bold">Nova AI</h2>
+                <h2 className="text-lg md:text-xl font-bold">Nova AI</h2>
                 <div className="flex items-center gap-1.5">
                     <div className={`w-2 h-2 rounded-full ${isTyping ? 'bg-[#4facfe] animate-ping' : 'bg-green-500 animate-pulse'}`}></div>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-[10px] md:text-xs text-gray-400">
                       {isTyping ? 'Nova is thinking...' : isListening ? 'Nova is listening...' : 'Intelligent Assistant Online'}
                     </span>
                 </div>
             </div>
         </div>
-        <button className="text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-1" onClick={() => setMessages([messages[0]])}>
+        <button className="text-[10px] md:text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-1" onClick={() => setMessages([messages[0]])}>
             Clear Chat
         </button>
       </div>
 
-      <Card className="flex-1 flex flex-col p-0 overflow-hidden border-[#4facfe]/20">
-        {/* Chat Area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+      <Card className="flex-1 flex flex-col p-0 overflow-hidden border-[#4facfe]/20 min-h-0">
+        {/* Chat Area - min-h-0 and flex-1 are key for correct scrolling inside a flex container */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           {messages.map((msg, i) => {
             const isLast = i === messages.length - 1;
             const isStreaming = isTyping && isLast && msg.role === 'assistant';
@@ -158,7 +160,7 @@ export const Assistant: React.FC = () => {
 
             return (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
-                <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`flex gap-3 max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                   <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center border transition-all duration-300 ${
                     msg.role === 'user' 
                     ? 'bg-white/5 border-white/10' 
@@ -169,7 +171,7 @@ export const Assistant: React.FC = () => {
                   
                   {/* Message Bubble or Typing Indicator */}
                   {!isEmpty ? (
-                    <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                    <div className={`p-3 md:p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
                       msg.role === 'user'
                       ? 'bg-gradient-to-r from-[#4facfe] to-[#00f2fe] text-black font-medium rounded-tr-none'
                       : 'bg-[#1e2a5e]/40 border border-white/5 text-gray-200 rounded-tl-none'
@@ -177,7 +179,7 @@ export const Assistant: React.FC = () => {
                       {msg.content}
                     </div>
                   ) : (
-                    <div className="bg-[#1e2a5e]/40 border border-white/5 p-4 rounded-2xl rounded-tl-none flex items-center gap-3">
+                    <div className="bg-[#1e2a5e]/40 border border-white/5 p-3 md:p-4 rounded-2xl rounded-tl-none flex items-center gap-3">
                        <div className="flex gap-1.5 items-center">
                           <div className="w-1.5 h-1.5 bg-[#4facfe] rounded-full animate-[bounce_1s_infinite_0ms] shadow-[0_0_5px_rgba(79,172,254,0.5)]"></div>
                           <div className="w-1.5 h-1.5 bg-[#4facfe] rounded-full animate-[bounce_1s_infinite_200ms] shadow-[0_0_5px_rgba(79,172,254,0.5)]"></div>
@@ -190,17 +192,19 @@ export const Assistant: React.FC = () => {
               </div>
             );
           })}
+          {/* Dummy element to anchor the scroll */}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-white/5 bg-black/20">
+        {/* Input Area - shrink-0 ensures it stays visible */}
+        <div className="p-3 md:p-4 border-t border-white/5 bg-black/20 shrink-0">
           {messages.length === 1 && !isTyping && (
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto scrollbar-hide">
                 {suggestedPrompts.map(prompt => (
                     <button 
                         key={prompt}
                         onClick={() => handleSendMessage(prompt)}
-                        className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:border-[#4facfe] hover:text-[#4facfe] transition-all"
+                        className="text-[10px] md:text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:border-[#4facfe] hover:text-[#4facfe] transition-all whitespace-nowrap"
                     >
                         {prompt}
                     </button>
@@ -219,24 +223,24 @@ export const Assistant: React.FC = () => {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder={isTyping ? "Nova is busy..." : isListening ? "Listening..." : "Ask Nova anything..."}
                     disabled={isTyping}
-                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-xl p-4 pr-16 text-white focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-xl p-3 md:p-4 pr-16 text-sm text-white focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
                     <button 
                         type="button"
                         onClick={toggleListening}
                         disabled={isTyping}
-                        className={`p-2 rounded-lg transition-all ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#4facfe] hover:bg-white/5'}`}
+                        className={`p-1.5 md:p-2 rounded-lg transition-all ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#4facfe] hover:bg-white/5'}`}
                         title={isListening ? "Stop listening" : "Start voice-to-text"}
                     >
-                        {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        {isListening ? <MicOff className="w-4 h-4 md:w-5 md:h-5" /> : <Mic className="w-4 h-4 md:w-5 md:h-5" />}
                     </button>
                     <button 
                         type="submit"
                         disabled={!input.trim() || isTyping}
-                        className="p-2 bg-[#4facfe] text-black rounded-lg hover:shadow-[0_0_15px_rgba(79,172,254,0.6)] disabled:opacity-50 disabled:hover:shadow-none transition-all"
+                        className="p-1.5 md:p-2 bg-[#4facfe] text-black rounded-lg hover:shadow-[0_0_15px_rgba(79,172,254,0.6)] disabled:opacity-50 disabled:hover:shadow-none transition-all"
                     >
-                        {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        {isTyping ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Send className="w-4 h-4 md:w-5 md:h-5" />}
                     </button>
                 </div>
             </div>
@@ -244,7 +248,7 @@ export const Assistant: React.FC = () => {
         </div>
       </Card>
       
-      <p className="text-center text-[10px] text-gray-600">
+      <p className="text-center text-[8px] md:text-[10px] text-gray-600 mb-2">
         Nova can make mistakes. Check important financial info. Powered by Gemini.
       </p>
     </div>

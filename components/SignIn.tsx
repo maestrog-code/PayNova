@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { User, Lock, ShieldCheck, ArrowRight, Loader2, KeyRound, Mail, CheckCircle2 } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface SignInProps {
   onLogin: () => void;
@@ -14,35 +15,73 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [tempToken, setTempToken] = useState<string>('');
 
-  const handleCredentialsSubmit = (e: React.FormEvent) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setIsLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await apiService.signin(email, password);
+      
+      if (response.success && response.data) {
+        if (response.data.requires2FA && response.data.tempToken) {
+          setTempToken(response.data.tempToken);
+          setStep('2fa');
+        } else if (response.data.token) {
+          // Login successful without 2FA
+          onLogin();
+        }
+      } else {
+        setError(response.message || 'Login failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during login');
+    } finally {
       setIsLoading(false);
-      setStep('2fa');
-    }, 1500);
+    }
   };
 
-  const handle2FASubmit = (e: React.FormEvent) => {
+  const handle2FASubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length < 6) return;
+    if (code.length < 6 || !tempToken) return;
     setIsLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await apiService.verify2FA(code, tempToken);
+      
+      if (response.success) {
+        onLogin();
+      } else {
+        setError(response.message || 'Invalid 2FA code');
+      }
+    } catch (err: any) {
+      setError(err.message || '2FA verification failed');
+    } finally {
       setIsLoading(false);
-      onLogin();
-    }, 1500);
+    }
   };
 
-  const handlePasswordResetRequest = (e: React.FormEvent) => {
+  const handlePasswordResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setError('');
+
+    try {
+      // TODO: Implement password reset endpoint in backend
+      // For now, simulate the request
+      await new Promise(resolve => setTimeout(resolve, 1500));
       setStep('resetSent');
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderContent = () => {
@@ -87,6 +126,11 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
                             </div>
                         </div>
                     </div>
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
                     <Button fullWidth disabled={isLoading} className="mt-6">
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center gap-2">Sign In <ArrowRight className="w-4 h-4" /></span>}
                     </Button>
@@ -119,8 +163,13 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
                         </div>
                          <p className="text-xs text-center text-gray-500 mt-2">Didn't receive code? <button type="button" className="text-[#4facfe] hover:text-white">Resend</button></p>
                     </div>
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
                      <div className="grid grid-cols-2 gap-3 mt-6">
-                        <Button type="button" variant="secondary" onClick={() => setStep('credentials')} disabled={isLoading}>
+                        <Button type="button" variant="secondary" onClick={() => { setStep('credentials'); setError(''); }} disabled={isLoading}>
                             Back
                         </Button>
                         <Button disabled={isLoading || code.length < 6}>
@@ -151,8 +200,13 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
                             />
                         </div>
                     </div>
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-3 mt-6">
-                        <Button type="button" variant="secondary" onClick={() => setStep('credentials')}>Back to Sign In</Button>
+                        <Button type="button" variant="secondary" onClick={() => { setStep('credentials'); setError(''); }}>Back to Sign In</Button>
                         <Button disabled={isLoading}>
                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Reset Link'}
                         </Button>

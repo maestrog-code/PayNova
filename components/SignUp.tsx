@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { User, Lock, Mail, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface SignUpProps {
   onSignUp: () => void;
@@ -15,18 +16,39 @@ export const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToSignIn }) 
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   const canSubmit = fullName && email && password && password === confirmPassword && agreed;
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
     setIsLoading(true);
-    // Simulate API call for registration
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await apiService.signup(email, password, fullName);
+      
+      if (response.success) {
+        // After successful signup, automatically sign in
+        const signInResponse = await apiService.signin(email, password);
+        if (signInResponse.success) {
+          onSignUp();
+        } else {
+          // Signup successful but signin failed - redirect to sign in
+          setError('Account created! Please sign in.');
+          setTimeout(() => {
+            onNavigateToSignIn();
+          }, 2000);
+        }
+      } else {
+        setError(response.message || 'Registration failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration');
+    } finally {
       setIsLoading(false);
-      onSignUp(); // Simulate successful signup and login
-    }, 1500);
+    }
   };
 
   return (
@@ -125,6 +147,12 @@ export const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToSignIn }) 
                     </label>
                 </div>
             </div>
+
+            {error && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                    {error}
+                </div>
+            )}
 
             <Button fullWidth disabled={isLoading || !canSubmit} className="mt-6">
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center gap-2">Create Account <ArrowRight className="w-4 h-4" /></span>}

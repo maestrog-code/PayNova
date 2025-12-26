@@ -8,9 +8,12 @@ import { Transfer } from './components/Transfer';
 import { SignIn } from './components/SignIn';
 import { SignUp } from './components/SignUp';
 import { NavView, AppTheme } from './types';
+import { apiService } from './services/api';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return apiService.isAuthenticated();
+  });
   const [authView, setAuthView] = useState<'signIn' | 'signUp'>('signIn');
   const [currentView, setCurrentView] = useState<NavView>('home');
   const [theme, setTheme] = useState<AppTheme>(() => {
@@ -25,6 +28,12 @@ function App() {
       document.documentElement.classList.remove('light-theme');
     }
   }, [theme]);
+
+  const handleLogout = () => {
+    apiService.clearTokens();
+    setIsAuthenticated(false);
+    setAuthView('signIn');
+  };
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
@@ -54,7 +63,7 @@ function App() {
     <Layout 
       currentView={currentView} 
       onNavigate={setCurrentView}
-      onLogout={() => setIsAuthenticated(false)}
+      onLogout={handleLogout}
       theme={theme}
       onToggleTheme={toggleTheme}
     >

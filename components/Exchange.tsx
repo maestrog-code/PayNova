@@ -4,6 +4,7 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { AppTheme } from '../types';
 import { ArrowDownUp, RefreshCcw, TrendingUp, AlertCircle, CheckCircle2, FileText, ShieldCheck, Copy, Upload, X, Loader2, ArrowRight } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface Rates {
   [key: string]: number;
@@ -31,6 +32,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const [rates, setRates] = useState<Rates>({});
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
   
   // Settlement State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -94,25 +96,43 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
     alert('Copied to clipboard');
   };
 
-  const handleFinalConfirm = () => {
+  const handleFinalConfirm = async () => {
     if (!selectedFile) return;
     setIsConfirming(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      // Create exchange transaction
+      const response = await apiService.createExchange(
+        fromCurrency,
+        toCurrency,
+        fromAmount,
+        currentRate
+      );
+
+      if (response.success && response.data) {
+        const tx = response.data.transaction;
         const newReceipt: ReceiptDetails = {
-            fromAmount,
-            fromCurrency,
-            toAmount: finalAmount,
-            toCurrency,
-            rate: currentRate,
-            fee: conversionFee,
-            totalDebited: fromAmount,
-            timestamp: new Date().toLocaleString(),
-            transactionId: `PN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+          fromAmount,
+          fromCurrency,
+          toAmount: finalAmount,
+          toCurrency,
+          rate: currentRate,
+          fee: conversionFee,
+          totalDebited: fromAmount,
+          timestamp: new Date().toLocaleString(),
+          transactionId: tx.reference_id || tx.id
         };
         setReceipt(newReceipt);
-        setIsConfirming(false);
         setView('receipt');
-    }, 2500);
+      } else {
+        setError(response.message || 'Exchange failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during exchange');
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const getFlagUrl = (currency: string) => {
@@ -290,6 +310,12 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                                 <p className="text-xs text-white font-bold">{selectedFile?.name}</p>
                             </div>
                             <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="absolute top-2 right-2 p-1.5 bg-black/80 text-white rounded-lg hover:bg-red-500"><X className="w-4 h-4" /></button>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                            {error}
                         </div>
                     )}
 

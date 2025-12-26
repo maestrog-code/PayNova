@@ -4,6 +4,7 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { AppTheme } from '../types';
 import { Globe, User, Zap, Clock, ShieldCheck, CheckCircle2, X, Upload, Image as ImageIcon, FileText, Loader2, Copy } from 'lucide-react';
+import { apiService } from '../services/api';
 
 export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const [amount, setAmount] = useState('');
@@ -18,6 +19,8 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [transactionId, setTransactionId] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fees = { instant: 2.99, fast: 0.99, standard: 0.00 };
@@ -37,25 +40,62 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
     alert('Copied to clipboard');
   };
 
-  const handleSendClick = () => {
+  const handleSendClick = async () => {
     if (!amount || !recipient) return;
-    setShowSettlement(true);
+    setError('');
+    setIsUploading(true);
+
+    try {
+      // Create transfer transaction
+      const response = await apiService.createTransfer(
+        recipient,
+        parseFloat(amount),
+        currency,
+        transferType,
+        speed
+      );
+
+      if (response.success && response.data) {
+        setTransactionId(response.data.transaction.id);
+        setShowSettlement(true);
+      } else {
+        setError(response.message || 'Transfer initiation failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during transfer');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const confirmTransfer = () => {
+  const confirmTransfer = async () => {
+    if (!selectedFile || !transactionId) return;
     setIsUploading(true);
-    setTimeout(() => {
-        setIsUploading(false);
+    setError('');
+
+    try {
+      // Upload settlement proof
+      const response = await apiService.uploadSettlementProof(transactionId, selectedFile);
+
+      if (response.success) {
         setShowSettlement(false);
         setStep(2);
         setTimeout(() => {
-            setStep(1);
-            setAmount('');
-            setRecipient('');
-            setSelectedFile(null);
-            setFilePreview(null);
+          setStep(1);
+          setAmount('');
+          setRecipient('');
+          setSelectedFile(null);
+          setFilePreview(null);
+          setTransactionId('');
         }, 4000);
-    }, 2500);
+      } else {
+        setError(response.message || 'Upload failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload settlement proof');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (step === 2) {
@@ -146,6 +186,12 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     </div>
                 </div>
 
+                {error && (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm max-w-2xl mx-auto">
+                        {error}
+                    </div>
+                )}
+
                 <Button fullWidth onClick={confirmTransfer} disabled={isUploading || !selectedFile} className="max-w-2xl mx-auto">
                     {isUploading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Confirm Deposit & Finish'}
                 </Button>
@@ -211,8 +257,14 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
         </div>
       </div>
 
-      <Button fullWidth className="h-16 text-lg" onClick={handleSendClick} disabled={!amount || !recipient}>
-        Verify Settlement Proof
+      {error && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <Button fullWidth className="h-16 text-lg" onClick={handleSendClick} disabled={!amount || !recipient || isUploading}>
+        {isUploading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Verify Settlement Proof'}
       </Button>
 
       <div className={`rounded-3xl p-6 border flex gap-4 items-center ${theme === 'dark' ? 'bg-blue-500/5 border-blue-500/10' : 'bg-blue-50 border-blue-100'}`}>

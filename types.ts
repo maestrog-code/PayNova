@@ -1,4 +1,7 @@
-export type NavView = 'home' | 'exchange' | 'transfer' | 'markets';
+
+export type NavView = 'home' | 'exchange' | 'transfer' | 'assistant';
+export type SeasonalTheme = 'default' | 'halloween' | 'winter' | 'valentine';
+export type AppTheme = 'light' | 'dark';
 
 export interface Transaction {
   id: string;

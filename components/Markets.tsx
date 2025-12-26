@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -21,7 +22,7 @@ interface Notification {
   type: 'success' | 'alert';
 }
 
-type MarketCategory = 'crypto' | 'stocks' | 'forex';
+type MarketCategory = 'crypto' | 'stocks' | 'forex' | 'watchlist';
 
 export const Markets: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<MarketCategory>('crypto');
@@ -31,6 +32,10 @@ export const Markets: React.FC = () => {
     forex: INITIAL_FOREX_DATA
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [starredIds, setStarredIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('paynova_watchlist');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   // Transaction State
   const [selectedCoin, setSelectedCoin] = useState<MarketCoin | null>(null);
@@ -44,6 +49,11 @@ export const Markets: React.FC = () => {
   const [alertTargetPrice, setAlertTargetPrice] = useState<string>('');
   const [activeAlerts, setActiveAlerts] = useState<PriceAlert[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Persist watchlist
+  useEffect(() => {
+    localStorage.setItem('paynova_watchlist', JSON.stringify(starredIds));
+  }, [starredIds]);
 
   // Simulate real-time updates and check alerts
   useEffect(() => {
@@ -103,16 +113,29 @@ export const Markets: React.FC = () => {
     }
   };
 
-  const currentList = marketData[activeCategory];
+  const toggleWatchlist = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setStarredIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
 
-  const displayedCoins = currentList
+  const getSourceList = () => {
+    if (activeCategory === 'watchlist') {
+      return [...marketData.crypto, ...marketData.stocks, ...marketData.forex]
+        .filter(coin => starredIds.includes(coin.id));
+    }
+    return marketData[activeCategory];
+  };
+
+  const displayedCoins = getSourceList()
     .filter(c => 
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       c.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => b.change24h - a.change24h); // Sort by profitability
 
-  const topAsset = displayedCoins.length > 0 ? displayedCoins[0] : null;
+  const topAsset = (activeCategory !== 'watchlist' && displayedCoins.length > 0) ? displayedCoins[0] : null;
 
   // --- Transaction Handlers ---
   const handleTransaction = (coin: MarketCoin, type: 'buy' | 'sell') => {
@@ -350,7 +373,7 @@ export const Markets: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
         <button 
             onClick={() => setActiveCategory('crypto')}
             className={`px-6 py-2 rounded-full whitespace-nowrap transition-all duration-300 ${activeCategory === 'crypto' ? 'bg-[#4facfe] text-black font-bold shadow-[0_0_15px_rgba(79,172,254,0.4)]' : 'bg-[#1e2a5e]/40 border border-[#4facfe]/30 text-white hover:border-[#4facfe]'}`}
@@ -369,11 +392,18 @@ export const Markets: React.FC = () => {
         >
             Forex
         </button>
+        <button 
+            onClick={() => setActiveCategory('watchlist')}
+            className={`px-6 py-2 rounded-full whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${activeCategory === 'watchlist' ? 'bg-[#9cff57] text-black font-bold shadow-[0_0_15px_rgba(156,255,87,0.4)]' : 'bg-[#1e2a5e]/40 border border-[#4facfe]/30 text-white hover:border-[#4facfe]'}`}
+        >
+            <Star className={`w-4 h-4 ${activeCategory === 'watchlist' ? 'fill-current' : ''}`} />
+            Watchlist ({starredIds.length})
+        </button>
       </div>
 
       {/* Active Alerts List */}
       {activeAlerts.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
            {activeAlerts.map(alert => (
              <div key={alert.id} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1e2a5e]/50 border border-[#4facfe]/30 text-xs whitespace-nowrap">
                <Bell className="w-3 h-3 text-[#4facfe]" />
@@ -407,8 +437,13 @@ export const Markets: React.FC = () => {
                 </span>
               </div>
             </div>
-            <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-              <Star className="w-6 h-6 text-gray-400 hover:text-yellow-400 transition-colors" />
+            <button 
+              onClick={(e) => toggleWatchlist(e, topAsset.id)}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <Star 
+                className={`w-6 h-6 transition-all duration-300 ${starredIds.includes(topAsset.id) ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'text-gray-400 hover:text-yellow-400'}`} 
+              />
             </button>
           </div>
           <div className="h-48 w-full relative z-10">
@@ -437,72 +472,93 @@ export const Markets: React.FC = () => {
 
       {/* Market List */}
       <div className="space-y-4">
-        {displayedCoins.map(coin => (
-          <Card key={coin.id} className="flex flex-col md:flex-row items-center justify-between p-4 gap-4 hover:bg-[#4facfe]/5 transition-all duration-300 group">
-            
-            {/* Coin Info */}
-            <div className="flex items-center gap-4 w-full md:w-1/3">
-              <div className="w-10 h-10 shrink-0 rounded-full bg-[#1e2a5e] flex items-center justify-center text-[#4facfe] font-bold border border-[#4facfe]/30 group-hover:scale-110 transition-transform">
-                {coin.symbol[0]}
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold truncate">{coin.name}</p>
-                <p className="text-xs text-gray-400 truncate">{coin.symbol} • Vol: {coin.volume}</p>
-              </div>
+        {displayedCoins.length === 0 ? (
+          <div className="py-20 text-center space-y-4 animate-fadeIn">
+            <div className="w-16 h-16 bg-[#1e2a5e]/20 rounded-full flex items-center justify-center mx-auto border border-[#4facfe]/20 text-gray-500">
+               <Star className="w-8 h-8" />
             </div>
-            
-            {/* Chart (Hidden on small mobile) */}
-            <div className="hidden md:block w-full md:w-1/3 h-10 opacity-50 group-hover:opacity-100 transition-opacity">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={coin.history}>
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke={coin.change24h >= 0 ? '#76c958' : '#ef4444'} 
-                    strokeWidth={2} 
-                    dot={false}
-                    isAnimationActive={false}
+            <p className="text-gray-400">
+              {activeCategory === 'watchlist' 
+                ? "Your watchlist is empty. Star some assets to track them here!" 
+                : "No matching assets found."}
+            </p>
+          </div>
+        ) : (
+          displayedCoins.map(coin => (
+            <Card key={coin.id} className="flex flex-col md:flex-row items-center justify-between p-4 gap-4 hover:bg-[#4facfe]/5 transition-all duration-300 group">
+              
+              {/* Coin Info */}
+              <div className="flex items-center gap-4 w-full md:w-1/3">
+                <button 
+                  onClick={(e) => toggleWatchlist(e, coin.id)}
+                  className="shrink-0 group/star"
+                >
+                  <Star 
+                    className={`w-5 h-5 transition-all duration-300 ${starredIds.includes(coin.id) ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)] scale-110' : 'text-gray-600 hover:text-yellow-400/50'}`} 
                   />
-                  <YAxis domain={['dataMin', 'dataMax']} hide />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                </button>
+                <div className="w-10 h-10 shrink-0 rounded-full bg-[#1e2a5e] flex items-center justify-center text-[#4facfe] font-bold border border-[#4facfe]/30 group-hover:scale-105 transition-transform">
+                  {coin.symbol[0]}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold truncate">{coin.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{coin.symbol} • Vol: {coin.volume}</p>
+                </div>
+              </div>
+              
+              {/* Chart (Hidden on small mobile) */}
+              <div className="hidden md:block w-full md:w-1/3 h-10 opacity-50 group-hover:opacity-100 transition-opacity">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={coin.history}>
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke={coin.change24h >= 0 ? '#76c958' : '#ef4444'} 
+                      strokeWidth={2} 
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                    <YAxis domain={['dataMin', 'dataMax']} hide />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
 
-            {/* Price & Actions */}
-            <div className="flex items-center justify-between w-full md:w-1/3 gap-4">
-               <div className="text-right flex-1">
-                  <p className="font-bold">
-                    ${coin.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: (coin.price < 1 ? 4 : 2) })}
-                  </p>
-                  <p className={`text-sm ${coin.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {coin.change24h > 0 ? '+' : ''}{coin.change24h.toFixed(2)}%
-                  </p>
-               </div>
-               
-               <div className="flex items-center gap-2">
-                 <button 
-                    onClick={() => openAlertModal(coin)}
-                    className="p-2 rounded-lg bg-[#1e2a5e]/30 text-gray-400 border border-transparent hover:text-[#4facfe] hover:border-[#4facfe]/30 transition-all"
-                    title="Set Price Alert"
-                 >
-                    <Bell className="w-4 h-4" />
-                 </button>
-                 <button 
-                    onClick={() => handleTransaction(coin, 'buy')}
-                    className="px-4 py-1.5 rounded-lg bg-[#4facfe]/10 text-[#4facfe] border border-[#4facfe]/30 hover:bg-[#4facfe] hover:text-black font-medium text-sm transition-all"
-                 >
-                    Buy
-                 </button>
-                 <button 
-                    onClick={() => handleTransaction(coin, 'sell')}
-                    className="px-4 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white font-medium text-sm transition-all"
-                 >
-                    Sell
-                 </button>
-               </div>
-            </div>
-          </Card>
-        ))}
+              {/* Price & Actions */}
+              <div className="flex items-center justify-between w-full md:w-1/3 gap-4">
+                 <div className="text-right flex-1">
+                    <p className="font-bold">
+                      ${coin.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: (coin.price < 1 ? 4 : 2) })}
+                    </p>
+                    <p className={`text-sm ${coin.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {coin.change24h > 0 ? '+' : ''}{coin.change24h.toFixed(2)}%
+                    </p>
+                 </div>
+                 
+                 <div className="flex items-center gap-2">
+                   <button 
+                      onClick={() => openAlertModal(coin)}
+                      className="p-2 rounded-lg bg-[#1e2a5e]/30 text-gray-400 border border-transparent hover:text-[#4facfe] hover:border-[#4facfe]/30 transition-all"
+                      title="Set Price Alert"
+                   >
+                      <Bell className="w-4 h-4" />
+                   </button>
+                   <button 
+                      onClick={() => handleTransaction(coin, 'buy')}
+                      className="px-4 py-1.5 rounded-lg bg-[#4facfe]/10 text-[#4facfe] border border-[#4facfe]/30 hover:bg-[#4facfe] hover:text-black font-medium text-sm transition-all"
+                   >
+                      Buy
+                   </button>
+                   <button 
+                      onClick={() => handleTransaction(coin, 'sell')}
+                      className="px-4 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white font-medium text-sm transition-all"
+                   >
+                      Sell
+                   </button>
+                 </div>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

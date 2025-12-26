@@ -1,5 +1,7 @@
 {
   "name": "PayNova",
   "description": "A futuristic fintech dashboard featuring real-time market data, currency exchange, and secure transfers with a neon-dark aesthetic.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

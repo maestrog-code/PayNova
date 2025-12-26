@@ -1,28 +1,43 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
-import { Markets } from './components/Markets';
+import { Assistant } from './components/Assistant';
 import { Exchange } from './components/Exchange';
 import { Transfer } from './components/Transfer';
 import { SignIn } from './components/SignIn';
 import { SignUp } from './components/SignUp';
-import { NavView } from './types';
+import { NavView, AppTheme } from './types';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authView, setAuthView] = useState<'signIn' | 'signUp'>('signIn');
   const [currentView, setCurrentView] = useState<NavView>('home');
+  const [theme, setTheme] = useState<AppTheme>(() => {
+    return (localStorage.getItem('paynova_theme') as AppTheme) || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('paynova_theme', theme);
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   const renderView = () => {
     switch (currentView) {
       case 'home':
         return <Dashboard onNavigate={setCurrentView} />;
-      case 'markets':
-        return <Markets />;
+      case 'assistant':
+        return <Assistant />;
       case 'exchange':
-        return <Exchange />;
+        return <Exchange theme={theme} />;
       case 'transfer':
-        return <Transfer />;
+        return <Transfer theme={theme} />;
       default:
         return <Dashboard onNavigate={setCurrentView} />;
     }
@@ -40,6 +55,8 @@ function App() {
       currentView={currentView} 
       onNavigate={setCurrentView}
       onLogout={() => setIsAuthenticated(false)}
+      theme={theme}
+      onToggleTheme={toggleTheme}
     >
       {renderView()}
     </Layout>

@@ -1,4 +1,10 @@
-const { sequelize } = require('../config/database');
+const cors = require('cors');
+
+// This allows ALL websites to talk to your backend (Good for a quick fix)
+app.use(cors()); 
+
+// OR: This only allows YOUR frontend to talk to it (Better for security)
+// app.use(cors({ origin: 'https://your-frontend-url.run.app' }));const { sequelize } = require('../config/database');
 
 // Import models
 const User = require('./User')(sequelize);

@@ -57,7 +57,7 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
 
       if (response.success && response.data) {
         setTransactionId(response.data.transaction.id);
-        setShowSettlement(true);
+    setShowSettlement(true);
       } else {
         setError(response.message || 'Transfer initiation failed');
       }
@@ -81,11 +81,11 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
         setShowSettlement(false);
         setStep(2);
         setTimeout(() => {
-          setStep(1);
-          setAmount('');
-          setRecipient('');
-          setSelectedFile(null);
-          setFilePreview(null);
+            setStep(1);
+            setAmount('');
+            setRecipient('');
+            setSelectedFile(null);
+            setFilePreview(null);
           setTransactionId('');
         }, 4000);
       } else {

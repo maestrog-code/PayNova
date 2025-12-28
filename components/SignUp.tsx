@@ -37,7 +37,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToSignIn }) 
         } else {
           // Signup successful but signin failed - redirect to sign in
           setError('Account created! Please sign in.');
-          setTimeout(() => {
+    setTimeout(() => {
             onNavigateToSignIn();
           }, 2000);
         }

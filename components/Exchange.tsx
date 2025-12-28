@@ -113,14 +113,14 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
       if (response.success && response.data) {
         const tx = response.data.transaction;
         const newReceipt: ReceiptDetails = {
-          fromAmount,
-          fromCurrency,
-          toAmount: finalAmount,
-          toCurrency,
-          rate: currentRate,
-          fee: conversionFee,
-          totalDebited: fromAmount,
-          timestamp: new Date().toLocaleString(),
+            fromAmount,
+            fromCurrency,
+            toAmount: finalAmount,
+            toCurrency,
+            rate: currentRate,
+            fee: conversionFee,
+            totalDebited: fromAmount,
+            timestamp: new Date().toLocaleString(),
           transactionId: tx.reference_id || tx.id
         };
         setReceipt(newReceipt);

@@ -3,6 +3,8 @@ export type NavView = 'home' | 'exchange' | 'transfer' | 'assistant';
 export type SeasonalTheme = 'default' | 'halloween' | 'winter' | 'valentine';
 export type AppTheme = 'light' | 'dark';
 
+export const API_BASE_URL = 'https://paynova-backend-349841929338.us-central1.run.app';
+
 export interface Transaction {
   id: string;
   type: 'received' | 'sent' | 'exchange';

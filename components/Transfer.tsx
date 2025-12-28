@@ -1,9 +1,10 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { AppTheme, API_BASE_URL } from '../types';
-import { Globe, User, Zap, ShieldCheck, CheckCircle2, X, Upload, FileText, Loader2, Copy } from 'lucide-react';
+import { Globe, User, Zap, ShieldCheck, CheckCircle2, X, Upload, FileText, Loader2, Copy, QrCode, Camera } from 'lucide-react';
+import jsQR from 'jsqr';
 
 export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const [amount, setAmount] = useState('');
@@ -13,11 +14,17 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const [transferType, setTransferType] = useState<'international' | 'domestic'>('international');
   const [speed, setSpeed] = useState<'instant' | 'fast' | 'standard'>('instant');
   const [showSettlement, setShowSettlement] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const requestRef = useRef<number>(null);
 
   const fees = { instant: 2.99, fast: 0.99, standard: 0.00 };
 
@@ -76,6 +83,103 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
     }
   };
 
+  // QR Scanner Logic
+  const startScanner = async () => {
+    setShowScanner(true);
+    setIsScanning(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.play();
+        requestRef.current = requestAnimationFrame(scanFrame);
+      }
+    } catch (err) {
+      console.error('Camera access denied:', err);
+      alert('Could not access camera. Please check permissions.');
+      setShowScanner(false);
+    }
+  };
+
+  const stopScanner = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+    }
+    setIsScanning(false);
+    setShowScanner(false);
+  };
+
+  const scanFrame = () => {
+    if (videoRef.current && canvasRef.current && isScanning) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA && context) {
+        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        });
+
+        if (code) {
+          console.log('Found QR code', code.data);
+          handleQRCodeData(code.data);
+          stopScanner();
+          return;
+        }
+      }
+      requestRef.current = requestAnimationFrame(scanFrame);
+    }
+  };
+
+  const handleQRCodeData = (data: string) => {
+    try {
+      // Expected formats: 
+      // 1. JSON: {"to": "ID", "amount": "100", "currency": "USD"}
+      // 2. String: USER_ID:AMOUNT
+      // 3. URL: paynova://transfer?to=ID&amount=100
+      
+      if (data.startsWith('{')) {
+        const parsed = JSON.parse(data);
+        if (parsed.to || parsed.recipient) setRecipient(parsed.to || parsed.recipient);
+        if (parsed.amount) setAmount(parsed.amount.toString());
+        if (parsed.currency) setCurrency(parsed.currency);
+      } else if (data.includes('://')) {
+        const url = new URL(data.replace('paynova://', 'http://paynova/'));
+        const to = url.searchParams.get('to');
+        const amt = url.searchParams.get('amount');
+        const curr = url.searchParams.get('currency');
+        if (to) setRecipient(to);
+        if (amt) setAmount(amt);
+        if (curr) setCurrency(curr);
+      } else if (data.includes(':')) {
+        const [to, amt] = data.split(':');
+        setRecipient(to);
+        if (amt) setAmount(amt);
+      } else {
+        setRecipient(data);
+      }
+    } catch (e) {
+      console.error('Error parsing QR data:', e);
+      setRecipient(data); // Fallback to raw string
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, []);
+
   if (step === 2) {
       return (
           <div className="h-full flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
@@ -97,6 +201,47 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn relative">
+      {/* QR Scanner Modal */}
+      {showScanner && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-[fadeIn_0.2s_ease-out]">
+          <div className="w-full max-w-md space-y-6 relative">
+             <button onClick={stopScanner} className="absolute -top-12 right-0 text-white/50 hover:text-white p-2">
+                <X className="w-8 h-8" />
+             </button>
+             <div className="text-center space-y-2">
+                <Camera className="w-10 h-10 mx-auto text-[#4facfe] animate-pulse" />
+                <h3 className="text-2xl font-bold">Scanning Node QR</h3>
+                <p className="text-sm text-gray-500">Align the code within the frame to verify recipient</p>
+             </div>
+             
+             <div className="relative aspect-square overflow-hidden rounded-[2rem] border-2 border-[#4facfe]/30 bg-black">
+                <video ref={videoRef} className="w-full h-full object-cover" />
+                <canvas ref={canvasRef} className="hidden" />
+                
+                {/* Scanner Frame UI */}
+                <div className="absolute inset-0 border-[40px] border-black/60 pointer-events-none"></div>
+                <div className="absolute top-[40px] left-[40px] right-[40px] bottom-[40px] border-2 border-[#4facfe] rounded-2xl pointer-events-none shadow-[0_0_20px_rgba(79,172,254,0.3)]">
+                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#9cff57]"></div>
+                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#9cff57]"></div>
+                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#9cff57]"></div>
+                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#9cff57]"></div>
+                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[#4facfe] animate-[scannerLine_2s_infinite]"></div>
+                </div>
+             </div>
+             
+             <style>{`
+                @keyframes scannerLine {
+                    0% { transform: translateY(-100px); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translateY(100px); opacity: 0; }
+                }
+             `}</style>
+             
+             <Button fullWidth variant="secondary" onClick={stopScanner}>Cancel Scan</Button>
+          </div>
+        </div>
+      )}
+
       {showSettlement && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
           <Card className="w-full max-w-4xl relative max-h-[90vh] overflow-y-auto p-8">
@@ -171,9 +316,15 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
         </div>
       )}
 
-      <div>
-        <h2 className="text-2xl font-bold mb-1">Node Transfer</h2>
-        <p className="text-sm text-gray-400 uppercase tracking-widest font-bold">Secure Global Network</p>
+      <div className="flex items-center justify-between">
+        <div>
+            <h2 className="text-2xl font-bold mb-1">Node Transfer</h2>
+            <p className="text-sm text-gray-400 uppercase tracking-widest font-bold">Secure Global Network</p>
+        </div>
+        <button onClick={startScanner} className="p-3 bg-[#4facfe]/10 border border-[#4facfe]/30 rounded-2xl text-[#4facfe] hover:bg-[#4facfe] hover:text-black transition-all flex items-center gap-2">
+            <QrCode className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Scan QR</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -191,7 +342,12 @@ export const Transfer: React.FC<{ theme: AppTheme }> = ({ theme }) => {
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Recipient</label>
-            <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="Node ID or Wallet" className="w-full bg-black/40 border border-gray-700 rounded-xl p-4 focus:border-[#4facfe] outline-none" />
+            <div className="relative group">
+                <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="Node ID or Wallet" className="w-full bg-black/40 border border-gray-700 rounded-xl p-4 pr-12 focus:border-[#4facfe] outline-none" />
+                <button onClick={startScanner} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#4facfe] transition-colors">
+                    <QrCode className="w-5 h-5" />
+                </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

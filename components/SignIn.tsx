@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { User, Lock, ShieldCheck, ArrowRight, Loader2, KeyRound, Mail, CheckCircle2 } from 'lucide-react';
+import { User, Lock, ShieldCheck, ArrowRight, Loader2, KeyRound, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '../types';
 
 interface SignInProps {
@@ -24,18 +24,31 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const targetUrl = `${API_BASE_URL}/auth/login`;
+      const response = await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ email, password })
       });
+      
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (pError) {
+        throw new Error(`The server returned a non-JSON response. (Status: ${response.status})`);
+      }
+      
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Invalid credentials');
+        throw new Error(data.message || data.error || 'Invalid credentials');
       }
       setStep('2fa');
     } catch (err: any) {
-      setError(err.message);
+      console.error("Login Error:", err);
+      setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -49,13 +62,25 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
     try {
       const response = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ email, code })
       });
-      if (!response.ok) throw new Error('Invalid security code');
+      
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (pError) {
+        throw new Error(`The server returned a non-JSON response during 2FA. (Status: ${response.status})`);
+      }
+      
+      if (!response.ok) throw new Error(data.message || 'Invalid security code');
       onLogin();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "2FA verification failed.");
     } finally {
       setIsLoading(false);
     }
@@ -68,12 +93,15 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
     try {
       await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ email })
       });
       setStep('resetSent');
     } catch (err) {
-      setError('Could not send reset link');
+      setError('Could not send reset link. User may not exist.');
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +116,12 @@ export const SignIn: React.FC<SignInProps> = ({ onLogin, onNavigateToSignUp }) =
                         <h2 className="text-2xl font-bold">Welcome Back</h2>
                         <p className="text-gray-400 text-sm">Enter your credentials for PayNova Node Access</p>
                     </div>
-                    {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl text-center">{error}</div>}
+                    {error && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl flex items-start gap-3">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>{error}</span>
+                      </div>
+                    )}
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-sm text-gray-400 ml-1">Email Address</label>

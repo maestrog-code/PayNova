@@ -25,13 +25,23 @@ function App() {
       const savedAuth = localStorage.getItem('paynova_auth');
       
       try {
-        // Ping backend to ensure connectivity
-        const response = await fetch(`${API_BASE_URL}/health`);
-        if (response.ok && savedAuth === 'true') {
+        // Ping backend to ensure connectivity and wake up Cloud Run (Cold Start)
+        // We set a timeout for the health check so it doesn't hang forever
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(`${API_BASE_URL}/health`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (savedAuth === 'true') {
+          // If we have a saved session, we trust it even if health check is slow
           setIsAuthenticated(true);
         }
       } catch (err) {
-        console.error("Backend unreachable:", err);
+        console.warn("Backend handshake slow or failed, proceeding with local session state.");
+        if (savedAuth === 'true') {
+          setIsAuthenticated(true);
+        }
       } finally {
         setIsInitializing(false);
       }

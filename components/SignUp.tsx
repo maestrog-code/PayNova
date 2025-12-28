@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { User, Lock, Mail, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
-import { apiService } from '../services/api';
+import { API_BASE_URL } from '../types';
 
 interface SignUpProps {
   onSignUp: () => void;
@@ -16,7 +17,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToSignIn }) 
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit = fullName && email && password && password === confirmPassword && agreed;
 
@@ -24,28 +25,20 @@ export const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToSignIn }) 
     e.preventDefault();
     if (!canSubmit) return;
     setIsLoading(true);
-    setError('');
-
+    setError(null);
     try {
-      const response = await apiService.signup(email, password, fullName);
-      
-      if (response.success) {
-        // After successful signup, automatically sign in
-        const signInResponse = await apiService.signin(email, password);
-        if (signInResponse.success) {
-          onSignUp();
-        } else {
-          // Signup successful but signin failed - redirect to sign in
-          setError('Account created! Please sign in.');
-    setTimeout(() => {
-            onNavigateToSignIn();
-          }, 2000);
-        }
-      } else {
-        setError(response.message || 'Registration failed');
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, password })
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Registration failed');
       }
+      onSignUp();
     } catch (err: any) {
-      setError(err.message || 'An error occurred during registration');
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -53,119 +46,29 @@ export const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToSignIn }) 
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden text-white">
-      <div className="fixed inset-0 z-[-1]" style={{
-          background: 'radial-gradient(circle at 50% 50%, #1e2a5e 0%, #000000 100%)'
-      }}></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#4facfe] rounded-full blur-[120px] opacity-10 animate-pulse"></div>
-
+      <div className="fixed inset-0 z-[-1]" style={{ background: 'radial-gradient(circle at 50% 50%, #1e2a5e 0%, #000000 100%)' }}></div>
       <div className="w-full max-w-md relative z-10 space-y-8">
         <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-20 relative flex items-center justify-center shrink-0">
-                <svg viewBox="0 0 100 100" className="w-full h-full rounded-full bg-black/50 shadow-[0_0_30px_rgba(79,172,254,0.6)] border border-[#4facfe]/30">
-                    <defs>
-                        <linearGradient id="vortexGradSignUp" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#00f2fe" />
-                            <stop offset="100%" stopColor="#4facfe" />
-                        </linearGradient>
-                         <filter id="vortexBlurSignUp" x="-50%" y="-50%" width="200%" height="200%">
-                            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" />
-                        </filter>
-                    </defs>
-                    <g className="animate-[spin_8s_linear_infinite]" style={{ transformOrigin: '50% 50%' }}>
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <path
-                          key={i}
-                          d="M 50,50 L 90,50 A 40,40 0 0 0 50,10 Z"
-                          fill="url(#vortexGradSignUp)"
-                          transform={`rotate(${i * 45}, 50, 50)`}
-                          opacity="0.6"
-                          filter="url(#vortexBlurSignUp)"
-                        />
-                      ))}
-                    </g>
-                    <circle cx="50" cy="50" r="18" fill="black" />
-                </svg>
-            </div>
-             <div className="text-4xl font-bold tracking-wider">
-                <span style={{ color: '#9cff57', textShadow: '0 0 10px rgba(156, 255, 87, 0.4)'}}>PAY</span>
-                <span style={{
-                background: 'linear-gradient(to right, #4facfe, #a7e6ff)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent'
-                }}>NOVA</span>
-            </div>
+            <h1 className="text-4xl font-bold tracking-wider"><span className="text-[#9cff57]">PAY</span><span className="text-[#4facfe]">NOVA</span></h1>
         </div>
-
-        <Card className="border-[#4facfe]/30 shadow-[0_0_40px_rgba(30,42,94,0.6)] backdrop-blur-xl">
+        <Card className="border-[#4facfe]/30 shadow-xl backdrop-blur-xl">
           <form onSubmit={handleSignUp} className="space-y-6 animate-fadeIn">
-            <div className="text-center">
-                <h2 className="text-2xl font-bold">Create Your Account</h2>
-                <p className="text-gray-400 text-sm">Join PayNova and manage your finances</p>
-            </div>
-
+            <div className="text-center"><h2 className="text-2xl font-bold">Register Account</h2></div>
+            {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl text-center">{error}</div>}
             <div className="space-y-4">
-                 <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Full Name</label>
-                    <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#4facfe] transition-colors" />
-                        <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe"
-                            className="w-full bg-[#0a0a0a]/50 border border-gray-700 rounded-xl p-4 pl-12 text-white placeholder-gray-600 focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe] transition-all" required />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Email Address</label>
-                    <div className="relative group">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#4facfe] transition-colors" />
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john.doe@example.com"
-                            className="w-full bg-[#0a0a0a]/50 border border-gray-700 rounded-xl p-4 pl-12 text-white placeholder-gray-600 focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe] transition-all" required />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Password</label>
-                    <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#4facfe] transition-colors" />
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-                            className="w-full bg-[#0a0a0a]/50 border border-gray-700 rounded-xl p-4 pl-12 text-white placeholder-gray-600 focus:border-[#4facfe] focus:outline-none focus:ring-1 focus:ring-[#4facfe] transition-all" required />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Confirm Password</label>
-                    <div className="relative group">
-                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#4facfe] transition-colors" />
-                        <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••"
-                            className={`w-full bg-[#0a0a0a]/50 border rounded-xl p-4 pl-12 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all ${password && confirmPassword && password !== confirmPassword ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-700 focus:border-[#4facfe] focus:ring-[#4facfe]'}`} required />
-                    </div>
-                     {password && confirmPassword && password !== confirmPassword && (
-                        <p className="text-xs text-red-400 text-right">Passwords do not match.</p>
-                     )}
-                </div>
+                 <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name" className="w-full bg-black/40 border border-gray-700 rounded-xl p-4 text-white focus:border-[#4facfe] focus:outline-none" required />
+                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full bg-black/40 border border-gray-700 rounded-xl p-4 text-white focus:border-[#4facfe] focus:outline-none" required />
+                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full bg-black/40 border border-gray-700 rounded-xl p-4 text-white focus:border-[#4facfe] focus:outline-none" required />
+                 <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm Password" className={`w-full bg-black/40 border rounded-xl p-4 text-white focus:outline-none ${password !== confirmPassword ? 'border-red-500' : 'border-gray-700'}`} required />
                  <div className="flex items-center gap-2 pt-2">
-                    <input type="checkbox" id="terms" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="h-4 w-4 rounded bg-[#0a0a0a] border-gray-600 text-[#4facfe] focus:ring-[#4facfe]" />
-                    <label htmlFor="terms" className="text-xs text-gray-400">
-                        I agree to the <a href="#" className="text-[#4facfe] hover:underline">Terms of Service</a> and <a href="#" className="text-[#4facfe] hover:underline">Privacy Policy</a>.
-                    </label>
+                    <input type="checkbox" id="terms" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="h-4 w-4 bg-black border-gray-600 text-[#4facfe]" />
+                    <label htmlFor="terms" className="text-xs text-gray-400">I agree to the Terms of Service.</label>
                 </div>
             </div>
-
-            {error && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                    {error}
-                </div>
-            )}
-
-            <Button fullWidth disabled={isLoading || !canSubmit} className="mt-6">
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center gap-2">Create Account <ArrowRight className="w-4 h-4" /></span>}
-            </Button>
+            <Button fullWidth disabled={isLoading || !canSubmit} className="mt-6">{isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Create Account'}</Button>
           </form>
         </Card>
-
-        <p className="text-center text-gray-500 text-sm">
-          Already have an account?{' '}
-          <button onClick={onNavigateToSignIn} className="font-medium text-[#4facfe] hover:text-white transition-colors">
-            Sign In
-          </button>
-        </p>
+        <p className="text-center text-gray-500 text-sm">Already have an account? <button onClick={onNavigateToSignIn} className="text-[#4facfe] hover:text-white">Sign In</button></p>
       </div>
     </div>
   );

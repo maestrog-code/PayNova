@@ -130,7 +130,8 @@ export const Markets: React.FC = () => {
 
   const getSourceList = () => {
     if (activeCategory === 'watchlist') {
-      return Object.values(marketData).flat().filter(coin => starredIds.includes(coin.id));
+      // Fix: Added explicit type assertion to MarketCoin[] to resolve 'Property id does not exist on type unknown' error
+      return (Object.values(marketData).flat() as MarketCoin[]).filter(coin => starredIds.includes(coin.id));
     }
     return marketData[activeCategory] || [];
   };

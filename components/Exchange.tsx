@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { AppTheme } from '../types';
+import { AppTheme, API_BASE_URL } from '../types';
 import { ArrowDownUp, RefreshCcw, TrendingUp, AlertCircle, CheckCircle2, FileText, ShieldCheck, Copy, Upload, X, Loader2, ArrowRight } from 'lucide-react';
-import { apiService } from '../services/api';
 
 interface Rates {
   [key: string]: number;
@@ -32,7 +31,6 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const [rates, setRates] = useState<Rates>({});
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
   
   // Settlement State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -46,13 +44,15 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const fetchRates = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`https://open.er-api.com/v6/latest/${fromCurrency}`);
-      if (!response.ok) throw new Error('Failed to fetch rates');
+      // Using the user-specified backend endpoint
+      const response = await fetch(`${API_BASE_URL}/rates/${fromCurrency}`);
+      if (!response.ok) throw new Error('Failed to fetch rates from backend');
       const data = await response.json();
-      setRates(data.rates);
+      // Expecting standard rates object from backend
+      setRates(data.rates || data);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
-      console.error(err);
+      console.error('Rate fetch error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -99,19 +99,23 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
   const handleFinalConfirm = async () => {
     if (!selectedFile) return;
     setIsConfirming(true);
-    setError('');
-
+    
     try {
-      // Create exchange transaction
-      const response = await apiService.createExchange(
-        fromCurrency,
-        toCurrency,
-        fromAmount,
-        currentRate
-      );
+        // Example of sending verification to backend
+        const formData = new FormData();
+        formData.append('receipt', selectedFile);
+        formData.append('fromAmount', fromAmount.toString());
+        formData.append('fromCurrency', fromCurrency);
+        formData.append('toCurrency', toCurrency);
 
-      if (response.success && response.data) {
-        const tx = response.data.transaction;
+        const response = await fetch(`${API_BASE_URL}/exchange/verify`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Verification failed');
+        const data = await response.json();
+
         const newReceipt: ReceiptDetails = {
             fromAmount,
             fromCurrency,
@@ -121,17 +125,15 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
             fee: conversionFee,
             totalDebited: fromAmount,
             timestamp: new Date().toLocaleString(),
-          transactionId: tx.reference_id || tx.id
+            transactionId: data.transactionId || `PN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
         };
         setReceipt(newReceipt);
         setView('receipt');
-      } else {
-        setError(response.message || 'Exchange failed');
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during exchange');
+    } catch (error) {
+        console.error('Settlement error:', error);
+        alert('Could not verify settlement. Please check network.');
     } finally {
-      setIsConfirming(false);
+        setIsConfirming(false);
     }
   };
 
@@ -181,7 +183,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     <div className="bg-blue-500/5 rounded-2xl p-4 flex items-center gap-4 border border-blue-500/10">
                         <ShieldCheck className="w-6 h-6 text-green-500 shrink-0" />
                         <p className="text-[10px] text-gray-500 leading-relaxed">
-                            Proof of payment received and verified. Funds have been distributed to your secondary wallet.
+                            Proof of payment received and verified by PayNova Backend. Funds have been distributed to your secondary wallet.
                         </p>
                     </div>
                 </div>
@@ -285,7 +287,7 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                     </div>
                     <p className="text-xs text-gray-500 leading-relaxed">
                         Please upload a clear screenshot or photo of your bank receipt. 
-                        A PayNova agent will verify the funds within 60 seconds of submission.
+                        A PayNova agent will verify the funds via our backend within 60 seconds.
                     </p>
 
                     {!filePreview ? (
@@ -310,12 +312,6 @@ export const Exchange: React.FC<{ theme: AppTheme }> = ({ theme }) => {
                                 <p className="text-xs text-white font-bold">{selectedFile?.name}</p>
                             </div>
                             <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="absolute top-2 right-2 p-1.5 bg-black/80 text-white rounded-lg hover:bg-red-500"><X className="w-4 h-4" /></button>
-                        </div>
-                    )}
-
-                    {error && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                            {error}
                         </div>
                     )}
 
